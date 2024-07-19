@@ -12,7 +12,7 @@ class VideoForm(forms.ModelForm):
         super(VideoForm, self).__init__(*args, **kwargs)
         for visible in self.visible_fields():
             visible.field.widget.attrs['class'] = 'form-control'
-            
+
 class SignUpForm(UserCreationForm):
     username = UsernameField(widget=forms.TextInput(attrs={'autofocus': 'True', 'class': 'form-control'}))    
     email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control'}))
