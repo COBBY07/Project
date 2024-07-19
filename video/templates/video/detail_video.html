@@ -1,0 +1,355 @@
+{% extends 'video/base.html' %}
+{% load static %}
+{% block title %} Video Detail {% endblock title %}
+
+{% block main-content %}
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4 shadow-p-3">
+                    <!-- Load Video.js CSS -->
+                    <link href="https://vjs.zencdn.net/8.12.0/video-js.css" rel="stylesheet" />
+
+                    <!-- Main Video Section: Only display the first video -->
+                    {% if current_video %}
+                    <div class="video-container">
+                        <video
+                            id="main-video"
+                            class="video-js vjs-default-skin vjs-fluid"
+                            controls
+                            preload="auto"
+                            poster=""
+                        >
+                            <source src="{{ current_video.video.url }}" type="video/mp4" />
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    <div class="card-body">
+                        <div class="video-info">
+                            <p class="card-text">{{ current_video.title }} - {{ current_video.description }}</p>
+                            <button class="share-button" onclick="openShareModal('{{ request.build_absolute_uri }}')">Share</button>
+                        </div>
+                    </div>
+                    <div class="navigation-buttons">
+                        {% if previous_video %}
+                        <a href="{% url 'video_detail' previous_video.id %}?page={{ videos.paginator.page(paginated_videos.number).previous_page_number }}" class="btn btn-primary">Previous</a>
+                        {% endif %}
+                        {% if next_video %}
+                        <a href="{% url 'video_detail' next_video.id %}?page={{ videos.paginator.page(paginated_videos.number).next_page_number }}" class="btn btn-primary">Next</a>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p>No videos available.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body shadow-p-3">
+                        <h4 class="text-center">Video ShowRoom</h4>
+                        <hr>
+                        <div class="thumbnail-container">
+                            {% for x in videos %}
+                            <div class="thumbnail-item d-flex align-items-center mb-3">
+                                <video 
+                                    id="thumbnail-video{{ forloop.counter }}" 
+                                    src="{{ x.video.url }}" 
+                                    type="video/mp4" 
+                                    class="thumbnail-video" 
+                                    muted
+                                    preload="metadata"
+                                    onloadedmetadata="this.currentTime=0"
+                                >
+                                    Your browser does not support the video tag.
+                                </video>
+                                <div class="video-details ml-3">
+                                    <p class="card-text"><strong>{{ x.title }}</strong> - {{ x.description }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Video.js JS -->
+    <script src="https://vjs.zencdn.net/8.12.0/video.min.js"></script>
+    <script src="//cdn.sc.gl/videojs-hotkeys/latest/videojs.hotkeys.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize the main video player
+            var mainPlayer = videojs('main-video', {
+                controls: true,
+                loop: true,
+                fluid: true,
+                aspectRatio: '16:9',
+                playbackRates: [0.25, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]
+            });
+
+            // Initialize the hotkeys plugin for the main video player
+            mainPlayer.ready(function() {
+                this.hotkeys({
+                    volumeStep: 0.1,
+                    seekStep: 5,
+                    enableModifiersForNumbers: false
+                });
+            });
+
+            // Set up the thumbnail videos to play the first five seconds
+            {% for x in videos %}
+            var thumbnailPlayer{{ forloop.counter }} = document.getElementById('thumbnail-video{{ forloop.counter }}');
+            thumbnailPlayer{{ forloop.counter }}.addEventListener('loadedmetadata', function() {
+                this.currentTime = 0;
+            });
+            thumbnailPlayer{{ forloop.counter }}.addEventListener('timeupdate', function() {
+                if (this.currentTime >= 5) {
+                    this.pause();
+                }
+            });
+            {% endfor %}
+        });
+
+        function openShareModal(videoUrl) {
+            var modal = document.createElement('div');
+            modal.classList.add('share-modal');
+            modal.innerHTML = `
+                <div class="share-modal-content">
+                    <span class="close-button" onclick="closeShareModal()">&times;</span>
+                    <h3>Share this video</h3>
+                    <div class="share-options">
+                        <input type="text" id="videoUrl" value="${videoUrl}" readonly>
+                        <button onclick="copyLink()">Copy Link</button>
+                    </div>
+                    <div class="social-share">
+                        <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(videoUrl)}" target="_blank">
+                            <img src="{% static 'images/facebook-icon.png' %}" alt="Facebook">
+                        </a>
+                        <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(videoUrl)}" target="_blank">
+                            <img src="{% static 'images/twitter-icon.png' %}" alt="Twitter">
+                        </a>
+                        <a href="mailto:?subject=Check%20out%20this%20video&body=${encodeURIComponent(videoUrl)}">
+                            <img src="{% static 'images/email-icon.png' %}" alt="Email">
+                        </a>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function copyLink() {
+            var urlInput = document.getElementById('videoUrl');
+            urlInput.select();
+            document.execCommand('copy');
+            alert('Link copied to clipboard');
+        }
+
+        function closeShareModal() {
+            var modal = document.querySelector('.share-modal');
+            modal.parentNode.removeChild(modal);
+        }
+    </script>
+
+    <style>
+        .share-button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .share-button:hover {
+            background-color: #0056b3;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .video-js {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        .share-modal {
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .share-modal-content {
+            background-color: #fff;
+            padding: 20px;
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 24px;
+            color: #aaa;
+        }
+
+        .close-button:hover {
+            color: #555;
+        }
+
+        .share-modal-content h3 {
+            margin-bottom: 20px;
+        }
+
+        .share-options {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .share-options input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .share-options button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .share-options button:hover {
+            background-color: #0056b3;
+        }
+
+        .social-share {
+            display: flex;
+            justify-content: center;
+        }
+
+        .social-share a {
+            display: block;
+            margin: 0 10px;
+            text-decoration: none;
+            transition: transform 0.3s ease;
+        }
+
+        .social-share a:hover {
+            transform: scale(1.2);
+        }
+
+        .social-share img {
+            width: 40px;
+            height: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .share-modal-content {
+                width: 90%;
+            }
+        }
+
+        .thumbnail-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .thumbnail-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .thumbnail-video {
+            width: 100px;
+            margin-bottom: 0;
+        }
+
+        .video-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-left: 10px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .video-details p {
+            margin: 0;
+        }
+
+        .video-details .share-button {
+            margin-top: 10px;
+        }
+
+        .video-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-info p {
+            margin: 0;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .navigation-buttons a {
+            flex: 1;
+            margin: 0 5px;
+            text-align: center;
+            padding: 10px 0;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .navigation-buttons a.btn-primary {
+            background-color: #007bff;
+        }
+
+        .navigation-buttons a.btn-primary:hover {
+            background-color: #0056b3;
+        }
+    </style>
+{% endblock main-content %}
