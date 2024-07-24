@@ -136,8 +136,8 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_SSL = False    # use port 465
 EMAIL_USE_TLS = True    # use port 587
 EMAIL_PORT = 587
-EMAIL_HOST_USER =  'cobbinaarthursimon@gmail.com'
-EMAIL_HOST_PASSWORD = 'bpqy opob qlrc bdpc'
+EMAIL_HOST_USER =  'add your email here'
+EMAIL_HOST_PASSWORD = 'add your google app key'
 
 
 
